@@ -1,57 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { useParams } from "react-router-dom";
-import { getProducts, getProductsByCategory } from "../../asyncMock";
 import ItemList from "../ItemList/ItemList";
+import { getProducts } from "../../services/firebase/firestore/products";
+import { useAsync } from "../../hooks/useAsyncs";
 
 
+const ItemListMemo = memo(ItemList)
 
 const ItemListContainer = ({ greeting }) => {
 
-    const [products, setProducts] = useState([])
-    const [loading, setLoading] = useState(true)
-
-
     const { categoryId } = useParams()
 
-    useEffect(() => {
+    const getProductsWithCategory = () => getProducts(categoryId)
 
-        setLoading(true)
-        const asyncFunction = categoryId ? getProductsByCategory : getProducts
-
-        asyncFunction(categoryId)
-            .then(products => {
-                setProducts(products)
-            })
-            .catch(error => {
-                console.log(error)
-            })
-            .finally(() => {
-                setLoading(false)
-            })
-
-    }, [categoryId])
+    const { data: products, error, loading } = useAsync(getProductsWithCategory, [categoryId])
 
     if (loading) {
         return (
-            <div className="min-h-screen grid items-center justify-center">
-                <h1 className="text-3xl font-bold uppercase text-yellow-500">Cargando..</h1>
+            <div className="container flex flex-1 items-center justify-center">
+                <h1 className="text-3xl font-bold text-yellow-500">Cargando..</h1>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="container flex flex-1 items-center justify-center">
+                <h1 className="text-3xl font-bold text-yellow-500">Oops! Vuelva a cargar la pagina..</h1>
             </div>
         )
     }
 
     if (products && products.length === 0) {
         return (
-            <div className="min-h-screen grid items-center justify-center">
-                <h1 className="text-3xl font-bold uppercase text-yellow-500">No hay Productos</h1>
+            <div className="container flex flex-1 items-center justify-center">
+                <h1 className="text-3xl font-bold text-yellow-500">No hay Productos</h1>
             </div>
         )
     }
 
     return (
-        <main className="container mx-auto text-center py-20">
-            <h1 className="text-3xl font-bold uppercase text-white">{greeting}</h1>
-            <ItemList products={products}></ItemList>
-        </main>
+        <div className="container flex flex-col flex-1 items-center justify-center gap-24 py-24 text-center">
+            <h1 className="text-3xl font-bold text-white">{greeting}</h1>
+            <ItemListMemo products={products}></ItemListMemo>
+        </div>
     )
 }
 
